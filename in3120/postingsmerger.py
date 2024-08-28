@@ -3,6 +3,12 @@
 from typing import Iterator
 from .posting import Posting
 
+def next_or(iterable, default):
+    try:
+        return next(iterable)
+    except StopIteration:
+        return default
+
 
 class PostingsMerger:
     """
@@ -24,7 +30,19 @@ class PostingsMerger:
         The posting lists are assumed sorted in increasing order according
         to the document identifiers.
         """
-        raise NotImplementedError("You need to implement this as part of the obligatory assignment.")
+        p1 = next_or(iter1, None)
+        p2 = next_or(iter2, None)
+        while p1 is not None and p2 is not None:
+            if p1.document_id == p2.document_id:
+                yield p1
+                p1 = next_or(iter1, None)
+                p2 = next_or(iter2, None)
+            elif p1.document_id < p2.document_id:
+                p1 = next_or(iter1, None)
+            else:
+                p2 = next_or(iter2, None)
+
+
 
     @staticmethod
     def union(iter1: Iterator[Posting], iter2: Iterator[Posting]) -> Iterator[Posting]:
@@ -35,7 +53,31 @@ class PostingsMerger:
         The posting lists are assumed sorted in increasing order according
         to the document identifiers.
         """
-        raise NotImplementedError("You need to implement this as part of the obligatory assignment.")
+        p1 = next_or(iter1, None)
+        p2 = next_or(iter2, None)
+        while p1 is not None and p2 is not None:
+            if p1.document_id == p2.document_id:
+                yield p1
+                p1 = next_or(iter1, None)
+                p2 = next_or(iter2, None)
+            elif p1.document_id < p2.document_id:
+                yield p1
+                p1 = next_or(iter1, None)
+            else:
+                yield p2
+                p2 = next_or(iter2, None)
+        if p1 is None and p2 is None:
+            pass
+        elif p1 is None:
+            # type checker is too dumb to know p2 can never be None at this
+            # point, but we are MASSIVE HUGE 🧠 here so we know better
+            yield p2  # pyright: ignore[reportReturnType]
+            yield from iter2
+        elif p2 is None:
+            yield p1
+            yield from iter1
+        else:
+            raise RuntimeError("wtf this shouldn't happen??!??!! HUH?")
 
     @staticmethod
     def difference(iter1: Iterator[Posting], iter2: Iterator[Posting]) -> Iterator[Posting]:
@@ -46,4 +88,20 @@ class PostingsMerger:
         The posting lists are assumed sorted in increasing order according
         to the document identifiers.
         """
-        raise NotImplementedError("You need to implement this as part of the obligatory assignment.")
+        p1 = next_or(iter1, None)
+        p2 = next_or(iter2, None)
+
+        while p1 is not None and p2 is not None:
+            if p1.document_id == p2.document_id:
+                p1 = next_or(iter1, None)
+                p2 = next_or(iter2, None)
+
+            elif p1.document_id < p2.document_id:
+                yield p1
+                p1 = next_or(iter1, None)
+            else:
+                p2 = next_or(iter2, None)
+
+        if p1 is not None:
+            yield p1
+            yield from iter1
