@@ -8,7 +8,7 @@ import collections.abc
 import csv
 from abc import abstractmethod
 from json import loads
-from typing import Any, List, Dict, Callable, Optional, Set, Iterable, Union
+from typing import Any, List, Dict, Callable, Optional, Set, Iterable, Union, Iterator
 from xml.dom.minidom import parse
 from .document import Document, InMemoryDocument
 from .documentpipeline import DocumentPipeline
@@ -28,8 +28,8 @@ class Corpus(collections.abc.Iterable):
         return self.get_document(document_id)
 
     @abstractmethod
-    def __iter__(self):
-        pass
+    def __iter__(self) -> Iterator[Document]:
+        raise NotImplementedError
 
     @abstractmethod
     def size(self) -> int:
@@ -103,7 +103,7 @@ class InMemoryCorpus(Corpus):
             else:
                 raise IOError(f"Filename has unsupported extension: {filename}")
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[InMemoryDocument]:
         return iter(self._documents)
 
     def size(self) -> int:
