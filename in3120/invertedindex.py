@@ -110,7 +110,20 @@ class InMemoryInvertedIndex(InvertedIndex):
         ranking. See https://nlp.stanford.edu/IR-book/html/htmledition/positional-indexes-1.html for
         further details.
         """
-        raise NotImplementedError("You need to implement this as part of the obligatory assignment.")
+        for doc in sorted(self._corpus, key=lambda doc: doc.get_document_id()):
+            doc_id = doc.get_document_id()
+            counter = {}
+            for content in map(doc.get_field, fields):
+                tokens = list(self._tokenizer.tokens(content))
+                for term, _ in tokens:
+                    noken = self._normalizer.normalize(term)
+                    coken = self._normalizer.canonicalize(noken)
+                    counter[coken] = counter.get(coken, 0) + 1
+
+            for term in counter:
+                posting_list_id = self._add_to_dictionary(term)
+                self._append_to_posting_list(posting_list_id, doc_id, counter[term], compressed)
+
 
     def _add_to_dictionary(self, term: str) -> int:
         """
@@ -125,7 +138,18 @@ class InMemoryInvertedIndex(InvertedIndex):
         must be kept sorted so that we can efficiently traverse and
         merge them when querying the inverted index.
         """
-        raise NotImplementedError("You need to implement this as part of the obligatory assignment.")
+
+        # using length of list to test for "new" term assumes there is no gaps
+        # in term_ids and that they arrive in order. this is guaranteed
+        # by Dictionary.add_if_absent's logic
+        if term_id >= len(self._posting_lists):
+            posting_list = InMemoryPostingList()
+            self._posting_lists.append(posting_list)
+        else:
+            posting_list = self._posting_lists[term_id]
+
+        new_posting = Posting(document_id, term_frequency)
+        posting_list.append_posting(new_posting)
 
     def _finalize_index(self):
         """
@@ -133,7 +157,8 @@ class InMemoryInvertedIndex(InvertedIndex):
         implementations that need it with the chance to tie up any loose ends,
         if needed.
         """
-        raise NotImplementedError("You need to implement this as part of the obligatory assignment.")
+        # nothing to free()
+        pass
 
     def get_terms(self, buffer: str) -> Iterator[str]:
         # In a serious large-scale application there could be field-specific tokenizers.
@@ -147,10 +172,18 @@ class InMemoryInvertedIndex(InvertedIndex):
         return (s for s, _ in self._dictionary)
 
     def get_postings_iterator(self, term: str) -> Iterator[Posting]:
-        raise NotImplementedError("You need to implement this as part of the obligatory assignment.")
+        term_id = self._dictionary.get_term_id(term)
+        if not term_id:
+            return iter({})
+        posting_list: PostingList = self._posting_lists[term_id]
+        return posting_list.get_iterator()
 
     def get_document_frequency(self, term: str) -> int:
-        raise NotImplementedError("You need to implement this as part of the obligatory assignment.")
+        term_id = self._dictionary.get_term_id(term)
+        if not term_id:
+            return 0
+        posting_list: PostingList = self._posting_lists[term_id]
+        return posting_list.get_length()
 
 class DummyInMemoryInvertedIndex(InMemoryInvertedIndex):
     """
