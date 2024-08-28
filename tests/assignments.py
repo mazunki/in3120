@@ -21,8 +21,7 @@ def assignment_a_suite() -> unittest.TestSuite:
                              "TestPostingsMerger", "TestBooleanSearchEngine"])
 
 def assignment_a_mazunki() -> unittest.TestSuite:
-    return build_test_suite(["TestInMemoryInvertedIndexWithoutCompression",
-                             "TestPostingsMerger"])
+    return build_test_suite(["TestMazunki"])
 
 def assignment_b_1_suite() -> unittest.TestSuite:
     return build_test_suite(["TestSuffixArray", "TestTrie", "TestStringFinder"])
@@ -66,7 +65,7 @@ def assignment_x_suite() -> unittest.TestSuite:
 def main():
     mappings = {
         "a":   assignment_a_suite,
-        "maz":   assignment_a_mazunki,
+        "maz": assignment_a_mazunki,
         "b-1": assignment_b_1_suite,
         "b-2": assignment_b_2_suite,
         "c-1": assignment_c_1_suite,

@@ -7,6 +7,33 @@ import unittest
 import types
 from context import in3120
 
+class TestMazunki(unittest.TestCase):
+    def setUp(self):
+        self._merger = in3120.PostingsMerger()
+
+    def test_intersection(self):
+        postings1 = [in3120.Posting(1, 0), in3120.Posting(2, 0), in3120.Posting(3, 0)]
+        postings2 = [in3120.Posting(2, 0), in3120.Posting(3, 0), in3120.Posting(6, 0)]
+        result12 = list(map(lambda p: p.document_id, self._merger.intersection(iter(postings1), iter(postings2))))
+        result21 = list(map(lambda p: p.document_id, self._merger.intersection(iter(postings2), iter(postings1))))
+        self.assertListEqual(result12, [2, 3])
+        self.assertListEqual(result21, [2, 3])
+
+    def test_union(self):
+        postings1 = [in3120.Posting(1, 0), in3120.Posting(2, 0), in3120.Posting(3, 0)]
+        postings2 = [in3120.Posting(2, 0), in3120.Posting(3, 0), in3120.Posting(6, 0)]
+        result12 = list(map(lambda p: p.document_id, self._merger.union(iter(postings1), iter(postings2))))
+        result21 = list(map(lambda p: p.document_id, self._merger.union(iter(postings2), iter(postings1))))
+        self.assertListEqual(result12, [1, 2, 3, 6])
+        self.assertListEqual(result21, [1, 2, 3, 6])
+
+    def test_difference(self):
+        postings1 = [in3120.Posting(1, 0), in3120.Posting(2, 0), in3120.Posting(3, 0)]
+        postings2 = [in3120.Posting(2, 0), in3120.Posting(3, 0), in3120.Posting(6, 0)]
+        result12 = list(map(lambda p: p.document_id, self._merger.difference(iter(postings1), iter(postings2))))
+        result21 = list(map(lambda p: p.document_id, self._merger.difference(iter(postings2), iter(postings1))))
+        self.assertListEqual(result12, [1])
+        self.assertListEqual(result21, [6])
 
 class TestPostingsMerger(unittest.TestCase):
 
