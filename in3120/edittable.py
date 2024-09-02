@@ -1,5 +1,7 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=line-too-long
+from collections import Counter
+
 
 class EditTable:
     """
@@ -15,7 +17,7 @@ class EditTable:
     a given query string.
 
     The time complexity of computing the edit distance between the query string and the
-    candidate string is O(M * N), when M and N are the lengths of the two strings. Less on
+    candidate string i,s O(M * N), when M and N are the lengths of the two strings. Less on
     average if Ukkonen's cutoff heuristic is applied and we bound our allowed edit distance.
     Bit-parallelism techniques exist that can bring this down to O(M * N / W), where W is
     the word size of the computer.
@@ -58,6 +60,8 @@ class EditTable:
         for j in range(len(self._candidate) + 1):
             self._table[0][j] = j
 
+        self._counter = Counter()
+
         # Populate the table, unless otherwise instructed. Start at the NW-most (upper left)
         # corner cell, and do column by column. The edit distance will be located in the SE-most
         # (lower right) corner cell.
@@ -97,7 +101,32 @@ class EditTable:
         the minimal value of edit-distance(query[0:i], candidate[0:j]) found by varying over
         all the row indices i.
         """
-        raise NotImplementedError("You need to implement this as part of the obligatory assignment.")
+        shortest = self._infinity
+        for i, _ in enumerate(self._table[1:], 1):
+            cost = int(self._query[i-1] != self._candidate[j-1])
+
+            deletion = self._table[i-1][j] + 1
+            insertion = self._table[i][j-1] + 1
+            substitution = self._table[i-1][j-1] + cost
+
+            dist = min((deletion, insertion, substitution))
+            self._table[i][j] = dist
+
+            if self._query[i-1] == self._candidate[j-2] and self._query[i-2] == self._candidate[j-1] and i > 2 and j > 2:
+                if dist == deletion: self._counter.update(["del-t"])
+                elif dist == insertion: self._counter.update(["ins-t"])
+                elif dist == substitution: self._counter.update(["sub-t"])
+                self._counter.update(["trans"])
+                self._table[i][j] = min((self._table[i][j], self._table[i-2][j-2]+1))
+            else:
+                if dist == deletion: self._counter.update(["del"])
+                elif dist == insertion: self._counter.update(["ins"])
+                elif dist == substitution: self._counter.update(["sub"])
+
+
+            shortest = min((dist, shortest))
+
+        return shortest
 
     def update2(self, j: int, symbol: str) -> int:
         """
@@ -108,7 +137,7 @@ class EditTable:
         column index is just out of range. That way, the table is usable also by clients
         that need to deal with candidate strings longer than what was initially anticipated.
         """
-        raise NotImplementedError("You need to implement this as part of the obligatory assignment.")
+        raise NotImplementedError()
 
     def distance(self, j: int = -1) -> int:
         """
@@ -127,3 +156,30 @@ class EditTable:
         returns candidate[0:j].
         """
         return "".join(self._candidate[0:j])
+
+    def __str__(self) -> str:
+        width = 3
+        header = " " + (" " * width) + "".join(f"{s:>{width}}" for s in self._candidate)
+        row0 = " " + "".join(f"{str(v):>{width}}".format(v) for v in self._table[0])
+        rows = [f"{self._query[i]}" + "".join(f"{str(v):>{width}}".format(v) for v in self._table[i + 1]) for i in range(len(self._query))]
+        return "\n".join([header, row0] + rows)
+
+if __name__ == "__main__":
+    pairs = (
+            (0, ("elephant", "elephant")),
+            (1, ("elephant", "elephnat")),
+            (3, ("relevant", "elephant")),
+            (6, ("ballad", "handball")),
+            (7, ("bullfrog", "frogger")),
+    )
+
+    for dist, (query, candidate) in pairs:
+        print(f"{query=}, {candidate=}")
+        et = EditTable(query, candidate)
+        print(et)
+        print(et._counter)
+
+        print(f"expected distance: {dist}")
+        print(f"found distance: {et.distance()}")
+        print()
+        
