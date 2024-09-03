@@ -78,21 +78,30 @@ class EditTable:
         to the candidate string, (b) appending cells to the special first padding row, and (c)
         appending cells to all the other rows.
         """
-        current = len(self._candidate)
-        self._candidate.extend("?" for _ in range(extra))
-        self._table[0].extend(x for x in range(current + 1, current + 1 + extra))
-        for i in range(1, len(self._table)):
-            self._table[i].extend(self._default for _ in range(extra))
+        current = len(self.candidate)
+        self._candidate.extend(self._placeholder for _ in range(extra))
+        self.table[0].extend(x for x in range(current + 1, current + 1 + extra))
+        for i in range(1, len(self.table)):
+            self.table[i].extend(self._default for _ in range(extra))
 
-    def stringify(self) -> str:
-        """
-        Creates a readable version of the edit table, for manual inspection and debugging.
-        """
-        width = 3
-        header = " " + (" " * width) + "".join(f"{s:>{width}}" for s in self._candidate)
-        row0 = " " + "".join(f"{str(v):>{width}}".format(v) for v in self._table[0])
-        rows = [f"{self._query[i]}" + "".join(f"{str(v):>{width}}".format(v) for v in self._table[i + 1]) for i in range(len(self._query))]
-        return "\n".join(["", header, row0] + rows)
+    def __getitem__(self, pos: Tuple[int, int]):
+        i, j = pos
+        return self.table[i][j]
+
+    def __setitem__(self, pos: Tuple[GlobIndex, GlobIndex], value: int):
+        i, j = pos
+        if i == ":":
+            for i in range(len(self.query) + 1):
+                self[i,j] = value
+        elif j == ":":
+            for j in range(len(self.candidate) + 1):
+                self[i,j] = value
+        else:
+            self.table[i][j] = value
+
+    def compute_all(self):
+        for j, _ in enumerate(self.candidate, start=1):
+            self.update(j)
 
     def update(self, j: int) -> int:
         """
@@ -104,34 +113,26 @@ class EditTable:
         the minimal value of edit-distance(query[0:i], candidate[0:j]) found by varying over
         all the row indices i.
         """
-        shortest = self._infinity
-        for i, _ in enumerate(self._table[1:], 1):
-            cost = int(self._query[i-1] != self._candidate[j-1])
+        for i, _ in enumerate(self.table[1:], start=1):
+            cost = int(self.query[i-1] != self.candidate[j-1])
 
-            deletion = self._table[i-1][j] + 1
-            insertion = self._table[i][j-1] + 1
-            substitution = self._table[i-1][j-1] + cost
+            deletion = self[i-1, j] + 1
+            insertion = self[i, j-1] + 1
+            substitution = self[i-1, j-1] + cost
 
-            dist = min((deletion, insertion, substitution))
-            self._table[i][j] = dist
 
-            if self._query[i-1] == self._candidate[j-2] and self._query[i-2] == self._candidate[j-1] and i > 2 and j > 2:
-                if dist == deletion: self._counter.update(["del-t"])
-                elif dist == insertion: self._counter.update(["ins-t"])
-                elif dist == substitution: self._counter.update(["sub-t"])
-                self._counter.update(["trans"])
-                self._table[i][j] = min((self._table[i][j], self._table[i-2][j-2]+1))
+            if i > 2 and j > 2 and \
+                self.query[i-1] == self.candidate[j-2] and \
+                self.query[i-2] == self.candidate[j-1]:
+                transposition = self.table[i-2][j-2]+1
             else:
-                if dist == deletion: self._counter.update(["del"])
-                elif dist == insertion: self._counter.update(["ins"])
-                elif dist == substitution: self._counter.update(["sub"])
+                transposition = self._infinity
 
+            self.table[i][j] = min((deletion, insertion, substitution, transposition))
 
-            shortest = min((dist, shortest))
+        return min(self.table[i][j] for i, _ in enumerate(self.table[1:]))
 
-        return shortest
-
-    def update2(self, j: int, symbol: str) -> int:
+    def update2(self, j: int, symbol: str, compute: bool=True) -> int:
         """
         Similar to update/1 above, but simultaneously allows you to update a single symbol
         in the candidate string, namely the symbol corresponding to the given column.
@@ -140,9 +141,17 @@ class EditTable:
         column index is just out of range. That way, the table is usable also by clients
         that need to deal with candidate strings longer than what was initially anticipated.
         """
-        raise NotImplementedError()
+        if j >= len(self.candidate):
+            self.__extend(j - len(self.candidate) + 1)
 
-    def distance(self, j: int = -1) -> int:
+        self._candidate[j] = symbol
+        if compute:
+            for j_, _ in enumerate(self.candidate[j:], start=j):
+                self.update(j_+1)
+
+        return min(self.table[i][j] for i, _ in enumerate(self.table[1:]))
+
+    def distance(self, j: Optional[int] = None) -> int:
         """
         Returns the edit distance between the query string and the candidate string.
         Defaults to looking at the SE-most cell in the table, i.e., the edit distance
@@ -151,7 +160,9 @@ class EditTable:
         Only a prefix of the candidate string can be considered, if specified. That is,
         the caller is allowed to supply a column index and that way vary the W-E axis.
         """
-        return self._table[-1][j]
+        if j is None:
+            j = self.candidate.find(self._placeholder) if self._placeholder in self.candidate else len(self.candidate)
+        return self.table[-1][j]
 
     def prefix(self, j: int) -> str:
         """
@@ -170,6 +181,7 @@ class EditTable:
     def stringify(self) -> str:
         """ precode compatibility """
         return str(self)
+
 
 
 if __name__ == "__main__":
