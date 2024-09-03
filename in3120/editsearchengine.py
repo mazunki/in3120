@@ -57,6 +57,7 @@ class EditSearchEngine:
 
         # The maximum number of candidate matches we score.
         candidate_count = max(1, options.get("candidate_count", 10000))
+        self.candidates_found = 0  # i really wish we had Sieve.__len__ to avoid this lol
 
         # The maximum number of scored matches we will emit.
         hit_count = max(1, min(100, options.get("hit_count", 10)))
@@ -87,16 +88,25 @@ class EditSearchEngine:
         # For keeping track of scored candidate matches. Only retains the highest-scoring ones.
         sieve = Sieve(hit_count)
 
+
         # The edit table object that we update as we traverse the trie. Two strings that share
         # a prefix of length N also share the N first columns in the edit table. Hence, as we
         # traverse the trie we can avoid recomputing large parts of the table.
         table = EditTable(tail, EditTable._placeholder * len(query), False)
         self._table = table
 
+
         # Receives matches from the search, as they are found. The search aborts if the callback
         # returns False, i.e., when we have received sufficiently many candidate matches.
-        def callback(distance: int, candidate: str, meta: Any) -> bool:
-            raise NotImplementedError("You need to implement this as part of the obligatory assignment.")
+        def callback(distance: int|float, candidate: str, meta: Any) -> bool:
+            if self.candidates_found >= candidate_count:
+                return False
+            if distance <= upper_bound:
+                score = scorer(distance, query, candidate)
+                sieve.sift(score, (distance, candidate, meta))
+                self.candidates_found += 1
+                return True
+            return False
 
         # Search! We receive and sift results via the callback.
         if root:
@@ -107,7 +117,7 @@ class EditSearchEngine:
             yield {"score": score, "distance": distance, "match": head + match, "meta": meta}
 
     def __dfs(self, node: Trie, level: int, table: EditTable,
-              upper_bound: int, callback: Callable[[float, str, Any], bool]) -> bool:
+              upper_bound: int, callback: Callable[[int|float, str, Any], bool]) -> bool:
         """
         Does a recursive depth-first search in the trie, pruning away paths that cannot lead
         to matches with a sufficiently low edit cost. See paper by Shang and Merrett for a
@@ -121,4 +131,18 @@ class EditSearchEngine:
         reasonable lengths, but could merit a second look if we look to apply this to other
         use cases.
         """
-        raise NotImplementedError("You need to implement this as part of the obligatory assignment.")
+        if node.is_final():
+            if not callback(table.distance(), table.candidate.rstrip(EditTable._placeholder), node.get_meta()):
+                return False
+
+        for candidate_symbol in node.transitions():
+            table.update2(level, candidate_symbol)
+            child_node = node.consume(candidate_symbol)
+            if child_node is None:
+                raise RuntimeError("attempted to search for unexisting symbol in trie node children")
+
+            self.__dfs(child_node, level+1, table, upper_bound, callback)
+            table.update2(level, table._placeholder, compute=False)  # restore orphaned characters due backtracking
+
+        return True
+
