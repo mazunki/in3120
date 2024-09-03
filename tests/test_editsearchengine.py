@@ -3,8 +3,39 @@
 # pylint: disable=missing-function-docstring
 
 import unittest
+
 from context import in3120
 
+
+class TestMazunkiSearchEngine(unittest.TestCase):
+
+    def setUp(self):
+        normalizer = in3120.SimpleNormalizer()
+        tokenizer = in3120.SimpleTokenizer()
+        trie = in3120.Trie()
+        trie.add(["pottis", "potetmos", "rødbetter"], normalizer, tokenizer)
+        trie.add(["patata", "pottet", "potet"], normalizer, tokenizer)
+        trie.add(["møkk"], normalizer, tokenizer)
+        # trie.add2([("aleksander", "rednaskela")], normalizer, tokenizer)
+        # trie.add(["abba", "ørret", "abbor"], normalizer, tokenizer)
+        # trie.add(["alleksander", "allekander", "aleksanderrrr"], normalizer, tokenizer)
+        self._engine = in3120.EditSearchEngine(trie, normalizer, tokenizer)
+
+    def test_infinite(self):
+        options = {"upper_bound": in3120.EditTable._infinity}
+        results = list(self._engine.evaluate("potet", options))
+        print(self._engine._table)
+        print(results)
+        self.assertEqual(7, len(results))
+        self.assertEqual(4, len(results[0]))
+        self.assertTrue("score" in results[0])
+        self.assertTrue("distance" in results[0])
+        self.assertTrue("match" in results[0])
+        self.assertTrue("meta" in results[0])
+        self.assertEqual("potet", results[0]["match"])
+        # self.assertEqual("rednaskela", results[0]["meta"])
+        self.assertEqual(0, results[0]["distance"])
+        self.assertAlmostEqual(1.0, results[0]["score"], 5)
 
 class TestEditSearchEngine(unittest.TestCase):
 
