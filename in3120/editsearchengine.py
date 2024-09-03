@@ -6,7 +6,8 @@
 # pylint: disable=too-many-arguments
 
 import math
-from typing import Iterator, Dict, Any, Callable
+from typing import Any, Callable, Dict, Iterator
+
 from .edittable import EditTable
 from .normalizer import Normalizer
 from .sieve import Sieve
@@ -74,9 +75,9 @@ class EditSearchEngine:
         # scores are better than low scores. The "lopresti" function is lifted
         # from https://www.cse.lehigh.edu/~lopresti/Publications/1996/sdair96.pdf.
         scorers = {
-            "negated": lambda d, q, c: -d,
-            "normalized": lambda d, q, c: 1.0 - (d / (first_n + max(len(q), len(c)))),
-            "lopresti": lambda d, q, c: 1.0 / math.exp(d / (first_n + max(len(q), len(c)) - d)),
+            "negated": lambda dist, *_: -dist,
+            "normalized": lambda dist, query, candidate: 1.0 - (dist / (first_n + max(len(query), len(candidate)))),
+            "lopresti": lambda dist, query, candidate: 1.0 / math.exp(dist / (first_n + max(len(query), len(candidate)) - dist)),
         }
 
         # The selected scoring function to apply to candidate matches.
@@ -89,7 +90,8 @@ class EditSearchEngine:
         # The edit table object that we update as we traverse the trie. Two strings that share
         # a prefix of length N also share the N first columns in the edit table. Hence, as we
         # traverse the trie we can avoid recomputing large parts of the table.
-        table = EditTable(tail, "?" * 10, False)
+        table = EditTable(tail, EditTable._placeholder * len(query), False)
+        self._table = table
 
         # Receives matches from the search, as they are found. The search aborts if the callback
         # returns False, i.e., when we have received sufficiently many candidate matches.

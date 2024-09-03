@@ -1,6 +1,8 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=line-too-long
-from collections import Counter
+from typing import Literal, Optional, Tuple, Union
+
+type GlobIndex = Union[int, Literal[":"]]
 
 
 class EditTable:
@@ -35,15 +37,15 @@ class EditTable:
     # in some intermediate state, you can easily see which cells that have been visited and which
     # ones that have not.
     _default = -1
+    _placeholder = "?"
 
     # A large internal value used to represent "infinity", for all practical purposes.
     _infinity = 210470
 
     def __init__(self, query: str, candidate: str, compute: bool = True):
-
         # Logical row/column labels. The query string is immutable, but we offer clients the
         # capability to mutate the candidate string on a per symbol basis.
-        self._query = query
+        self.query = query
         self._candidate = list(candidate)
 
         # Initialize table. Pad the table with an extra row and an extra column,
@@ -51,23 +53,24 @@ class EditTable:
         # Note that since we add an extra row and an extra columns, we will elsewhere
         # have to offset accordingly to align between table row/column indices and the
         # indices into the strings that logically correspond to each row/column.
-        self._table = [[self._default for j in range(len(self._candidate) + 1)] for i in range(len(self._query) + 1)]
+        self.table = [[self._default for _ in range(len(self.candidate) + 1)] for _ in range(len(query) + 1)]
 
         # Initialize with edit distances to the empty string, i.e., fill the row/column
         # we padded above.
-        for i in range(len(self._query) + 1):
-            self._table[i][0] = i
-        for j in range(len(self._candidate) + 1):
-            self._table[0][j] = j
-
-        self._counter = Counter()
+        for i in range(len(self.query) + 1):
+            self[i,0] = i
+        for j in range(len(self.candidate) + 1):
+            self[0,j] = j
 
         # Populate the table, unless otherwise instructed. Start at the NW-most (upper left)
         # corner cell, and do column by column. The edit distance will be located in the SE-most
         # (lower right) corner cell.
         if compute:
-            for j in range(1, len(self._candidate) + 1):
-                self.update(j)
+            self.compute_all()
+
+    @property
+    def candidate(self):
+        return "".join(self._candidate)
 
     def __extend(self, extra: int) -> None:
         """
@@ -155,14 +158,19 @@ class EditTable:
         Returns the prefix of the candidate string, up to the given index. I.e.,
         returns candidate[0:j].
         """
-        return "".join(self._candidate[0:j])
+        return self.candidate[:j]
 
     def __str__(self) -> str:
         width = 3
-        header = " " + (" " * width) + "".join(f"{s:>{width}}" for s in self._candidate)
-        row0 = " " + "".join(f"{str(v):>{width}}".format(v) for v in self._table[0])
-        rows = [f"{self._query[i]}" + "".join(f"{str(v):>{width}}".format(v) for v in self._table[i + 1]) for i in range(len(self._query))]
-        return "\n".join([header, row0] + rows)
+        header = " " + (" " * width) + "".join(f"{s:>{width}}" for s in self.candidate)
+        row0 = " " + "".join(f"{str(v):>{width}}".format(v) for v in self.table[0])
+        rows = [f"{self.query[i]}" + "".join(f"{str(v):>{width}}".format(v) for v in self.table[i + 1]) for i in range(len(self.query))]
+        return "\n".join(["", header, row0] + rows)
+
+    def stringify(self) -> str:
+        """ precode compatibility """
+        return str(self)
+
 
 if __name__ == "__main__":
     pairs = (
@@ -177,7 +185,6 @@ if __name__ == "__main__":
         print(f"{query=}, {candidate=}")
         et = EditTable(query, candidate)
         print(et)
-        print(et._counter)
 
         print(f"expected distance: {dist}")
         print(f"found distance: {et.distance()}")
