@@ -114,7 +114,7 @@ class InMemoryInvertedIndex(InvertedIndex):
             doc_id = doc.get_document_id()
 
             counter = Counter()
-            for content in map(doc.get_field, fields):
+            for content in (doc.get_field(field, "") for field in fields):
                 for term in self.get_terms(content):
                     counter[term] += 1
 
@@ -211,7 +211,9 @@ class DummyInMemoryInvertedIndex(InMemoryInvertedIndex):
         return iter([])
 
     def get_document_frequency(self, term: str) -> int:
-        return self._document_frequencies.get(self._dictionary.get_term_id(term), 0)
+        if term_id := self._dictionary.get_term_id(term):
+            return self._document_frequencies.get(term_id, 0)
+        return 0
 
 
 class AccessLoggedInvertedIndex(InvertedIndex):

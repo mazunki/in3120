@@ -45,7 +45,7 @@ class Document(ABC):
         pass
 
     @abstractmethod
-    def get_field(self, field_name: str, default: Any=None) -> Any:
+    def get_field(self, field_name: str, default: Any) -> Any:
         """
         Returns the value of the named field in the document. If the document
         doesn't contain the named field, the provided default field value is
@@ -84,7 +84,7 @@ class InMemoryDocument(Document):
     def get_document_id(self) -> int:
         return self.__document_id
 
-    def get_field(self, field_name: str, default: Any=None) -> Any:
+    def get_field(self, field_name: str, default: Any) -> Any:
         return self.__fields.get(field_name, default)
 
     def set_field(self, field_name: str, field_value: Any) -> None:
