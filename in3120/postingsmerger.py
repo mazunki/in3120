@@ -1,13 +1,8 @@
 # pylint: disable=missing-module-docstring
 
 from typing import Iterator
-from .posting import Posting
 
-def next_or(iterable, default):
-    try:
-        return next(iterable)
-    except StopIteration:
-        return default
+from .posting import Posting
 
 
 class PostingsMerger:
@@ -30,17 +25,17 @@ class PostingsMerger:
         The posting lists are assumed sorted in increasing order according
         to the document identifiers.
         """
-        p1 = next_or(iter1, None)
-        p2 = next_or(iter2, None)
+        p1 = next(iter1, None)
+        p2 = next(iter2, None)
         while p1 is not None and p2 is not None:
             if p1.document_id == p2.document_id:
                 yield p1
-                p1 = next_or(iter1, None)
-                p2 = next_or(iter2, None)
+                p1 = next(iter1, None)
+                p2 = next(iter2, None)
             elif p1.document_id < p2.document_id:
-                p1 = next_or(iter1, None)
+                p1 = next(iter1, None)
             else:
-                p2 = next_or(iter2, None)
+                p2 = next(iter2, None)
 
 
 
