@@ -110,15 +110,13 @@ class InMemoryInvertedIndex(InvertedIndex):
         ranking. See https://nlp.stanford.edu/IR-book/html/htmledition/positional-indexes-1.html for
         further details.
         """
-        for doc in sorted(self._corpus, key=lambda doc: doc.get_document_id()):
+        for doc in self._corpus:
             doc_id = doc.get_document_id()
-            counter = {}
+
+            counter = Counter()
             for content in map(doc.get_field, fields):
-                tokens = list(self._tokenizer.tokens(content))
-                for term, _ in tokens:
-                    noken = self._normalizer.normalize(term)
-                    coken = self._normalizer.canonicalize(noken)
-                    counter[coken] = counter.get(coken, 0) + 1
+                for term in self.get_terms(content):
+                    counter[term] += 1
 
             for term in counter:
                 posting_list_id = self._add_to_dictionary(term)
