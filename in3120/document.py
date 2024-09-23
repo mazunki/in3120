@@ -2,7 +2,7 @@
 # pylint: disable=unnecessary-pass
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 
 class Document(ABC):
