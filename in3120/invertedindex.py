@@ -3,7 +3,6 @@
 # pylint: disable=unnecessary-pass
 # pylint: disable=unused-argument
 
-import itertools
 from abc import ABC, abstractmethod
 from collections import Counter
 from typing import Dict, Iterable, Iterator, List, Tuple
@@ -12,8 +11,7 @@ from .corpus import Corpus
 from .dictionary import InMemoryDictionary
 from .normalizer import Normalizer
 from .posting import Posting
-from .postinglist import (CompressedInMemoryPostingList, InMemoryPostingList,
-                          PostingList)
+from .postinglist import InMemoryPostingList, PostingList
 from .tokenizer import Tokenizer
 
 
