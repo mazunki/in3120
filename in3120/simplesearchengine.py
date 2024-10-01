@@ -48,7 +48,9 @@ class SimpleSearchEngine:
         to return to the client is controlled via the "hit_count" (int) option.
         """
 
-        terms: List[str] = list(self.__inverted_index.get_terms(query))
+        multiplicites: Counter[str] = Counter(self.__inverted_index.get_terms(query))
+        terms: List[str] = list(multiplicites.keys())
+
         threshold: float = options.get("match_threshold", 1.0)  # defaults to only accepting perfect matches
 
         m: int = len(terms)
@@ -62,20 +64,20 @@ class SimpleSearchEngine:
         inverted_index = [self.__inverted_index.get_postings_iterator(term) for term in terms]
         postings = [next(p, None) for p in inverted_index]
 
-        counter = Counter()
+        n_of_m = Counter()
         while any(postings):
             doc_id = min(p.document_id for p in postings if p is not None)
 
             for i, p in enumerate(postings):
                 if p is not None and p.document_id == doc_id:
-                    counter[doc_id] += 1
+                    n_of_m[doc_id] += 1
 
-            if counter[doc_id] >= n:
+            if n_of_m[doc_id] >= n:
                 ranker.reset(doc_id)
 
                 for term, posting in zip(terms, postings):
                     if posting and posting.document_id == doc_id:
-                        ranker.update(term, terms.count(term), posting)
+                        ranker.update(term, multiplicites[term], posting)
 
                 sieve.sift(ranker.evaluate(), doc_id)
 
