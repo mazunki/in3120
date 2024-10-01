@@ -37,7 +37,7 @@ class EditTable:
     # in some intermediate state, you can easily see which cells that have been visited and which
     # ones that have not.
     _default = -1
-    _placeholder = "?"
+    placeholder = "?"
 
     # A large internal value used to represent "infinity", for all practical purposes.
     _infinity = 210470
@@ -70,6 +70,7 @@ class EditTable:
 
     @property
     def candidate(self):
+        """ returns the candidate as a string as opposed to a character-list """
         return "".join(self._candidate)
 
     def __extend(self, extra: int) -> None:
@@ -79,7 +80,7 @@ class EditTable:
         appending cells to all the other rows.
         """
         current = len(self.candidate)
-        self._candidate.extend(self._placeholder for _ in range(extra))
+        self._candidate.extend(self.placeholder for _ in range(extra))
         self.table[0].extend(x for x in range(current + 1, current + 1 + extra))
         for i in range(1, len(self.table)):
             self.table[i].extend(self._default for _ in range(extra))
@@ -100,6 +101,7 @@ class EditTable:
             self.table[i][j] = value
 
     def compute_all(self):
+        """ recomputes all the columns in the table from the start """
         for j, _ in enumerate(self.candidate, start=1):
             self.update(j)
 
@@ -161,7 +163,7 @@ class EditTable:
         the caller is allowed to supply a column index and that way vary the W-E axis.
         """
         if j is None:
-            j = self.candidate.find(self._placeholder) if self._placeholder in self.candidate else len(self.candidate)
+            j = self.candidate.find(self.placeholder) if self.placeholder in self.candidate else len(self.candidate)
         return self.table[-1][j]
 
     def prefix(self, j: int) -> str:
@@ -193,12 +195,11 @@ if __name__ == "__main__":
             (7, ("bullfrog", "frogger")),
     )
 
-    for dist, (query, candidate) in pairs:
-        print(f"{query=}, {candidate=}")
-        et = EditTable(query, candidate)
+    for dist, (t_query, t_candidate) in pairs:
+        print(f"{t_query=}, {t_candidate=}")
+        et = EditTable(t_query, t_candidate)
         print(et)
 
         print(f"expected distance: {dist}")
         print(f"found distance: {et.distance()}")
         print()
-        

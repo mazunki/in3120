@@ -27,6 +27,8 @@ class EditSearchEngine:
     Imposing a small upper bound allows us to prune the search space and make the search reasonably
     efficient.
     """
+    candidates_found: int
+    table: EditTable
 
     def __init__(self, trie: Trie, normalizer: Normalizer, tokenizer: Tokenizer):
         self.__trie = trie
@@ -92,8 +94,8 @@ class EditSearchEngine:
         # The edit table object that we update as we traverse the trie. Two strings that share
         # a prefix of length N also share the N first columns in the edit table. Hence, as we
         # traverse the trie we can avoid recomputing large parts of the table.
-        table = EditTable(tail, EditTable._placeholder * len(query), False)
-        self._table = table
+        table = EditTable(tail, EditTable.placeholder * len(query), False)
+        self.table = table
 
 
         # Receives matches from the search, as they are found. The search aborts if the callback
@@ -132,7 +134,7 @@ class EditSearchEngine:
         use cases.
         """
         if node.is_final():
-            if not callback(table.distance(), table.candidate.rstrip(EditTable._placeholder), node.get_meta()):
+            if not callback(table.distance(), table.candidate.rstrip(EditTable.placeholder), node.get_meta()):
                 return False
 
         for candidate_symbol in node.transitions():
@@ -142,7 +144,6 @@ class EditSearchEngine:
                 raise RuntimeError("attempted to search for unexisting symbol in trie node children")
 
             self.__dfs(child_node, level+1, table, upper_bound, callback)
-            table.update2(level, table._placeholder, compute=False)  # restore orphaned characters due backtracking
+            table.update2(level, table.placeholder, compute=False)  # restore orphaned characters due backtracking
 
         return True
-
