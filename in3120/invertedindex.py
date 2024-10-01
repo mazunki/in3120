@@ -11,7 +11,8 @@ from .corpus import Corpus
 from .dictionary import InMemoryDictionary
 from .normalizer import Normalizer
 from .posting import Posting
-from .postinglist import InMemoryPostingList, PostingList
+from .postinglist import (CompressedInMemoryPostingList, InMemoryPostingList,
+                          PostingList)
 from .tokenizer import Tokenizer
 
 
@@ -141,7 +142,11 @@ class InMemoryInvertedIndex(InvertedIndex):
         # in term_ids and that they arrive in order. this is guaranteed
         # by Dictionary.add_if_absent's logic
         if term_id >= len(self._posting_lists):
-            posting_list = InMemoryPostingList()
+            if compressed:
+                posting_list = CompressedInMemoryPostingList()
+            else:
+                posting_list = InMemoryPostingList()
+
             self._posting_lists.append(posting_list)
         else:
             posting_list = self._posting_lists[term_id]
@@ -171,14 +176,14 @@ class InMemoryInvertedIndex(InvertedIndex):
 
     def get_postings_iterator(self, term: str) -> Iterator[Posting]:
         term_id = self._dictionary.get_term_id(term)
-        if not term_id:
+        if term_id is None:
             return iter({})
         posting_list: PostingList = self._posting_lists[term_id]
         return posting_list.get_iterator()
 
     def get_document_frequency(self, term: str) -> int:
         term_id = self._dictionary.get_term_id(term)
-        if not term_id:
+        if term_id is None:
             return 0
         posting_list: PostingList = self._posting_lists[term_id]
         return posting_list.get_length()
