@@ -22,7 +22,7 @@ def assignment_a_suite() -> unittest.TestSuite:
                              "TestPostingsMerger", "TestBooleanSearchEngine"])
 
 def assignment_a_mazunki() -> unittest.TestSuite:
-    return build_test_suite(["TestMazunkiSearchEngine"])
+    return build_test_suite(["TestMazunkiSimpleSearchEngine"])
 
 def assignment_b_1_suite() -> unittest.TestSuite:
     return build_test_suite(["TestSuffixArray", "TestTrie", "TestStringFinder"])

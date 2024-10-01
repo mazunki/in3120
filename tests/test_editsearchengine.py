@@ -24,7 +24,7 @@ class TestMazunkiSearchEngine(unittest.TestCase):
     def test_infinite(self):
         options = {"upper_bound": in3120.EditTable._infinity}
         results = list(self._engine.evaluate("potet", options))
-        print(self._engine._table)
+        print(self._engine.table)
         print(results)
         self.assertEqual(7, len(results))
         self.assertEqual(4, len(results[0]))

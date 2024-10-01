@@ -38,7 +38,8 @@ from test_sieve import TestSieve
 from test_similaritysearchengine import TestSimilaritySearchEngine
 from test_simplenormalizer import TestSimpleNormalizer
 from test_simpleranker import TestSimpleRanker
-from test_simplesearchengine import TestSimpleSearchEngine
+from test_simplesearchengine import (TestMazunkiSimpleSearchEngine,
+                                     TestSimpleSearchEngine)
 from test_simpletokenizer import TestSimpleTokenizer
 from test_soundexnormalizer import TestSoundexNormalizer
 from test_sparsedocumentvector import TestSparseDocumentVector

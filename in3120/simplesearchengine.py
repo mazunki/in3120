@@ -4,7 +4,7 @@
 # pylint: disable=too-many-locals
 
 from collections import Counter
-from typing import Any, Dict, Iterator
+from typing import Any, Dict, Iterator, List, Set
 
 from .corpus import Corpus
 from .invertedindex import InvertedIndex
@@ -47,4 +47,44 @@ class SimpleSearchEngine:
         N is inferred from the query via the "match_threshold" (float) option, and the maximum number of documents
         to return to the client is controlled via the "hit_count" (int) option.
         """
-        raise NotImplementedError("You need to implement this as part of the obligatory assignment.")
+
+        terms: List[str] = list(self.__inverted_index.get_terms(query))
+        threshold: float = options.get("match_threshold", 1.0)  # defaults to only accepting perfect matches
+
+        m: int = len(terms)
+        n: int = max(1, min(m, int(threshold*m)))
+        if options.get("debug", False):
+            print(f"Checking {terms} with {n=}÷{m=}")
+
+        max_documents: int = options.get("hit_count", 10)
+        sieve = Sieve(max_documents)
+
+        inverted_index = [self.__inverted_index.get_postings_iterator(term) for term in terms]
+        postings = [next(p, None) for p in inverted_index]
+
+        counter = Counter()
+        while any(postings):
+            doc_id = min(p.document_id for p in postings if p is not None)
+
+            for i, p in enumerate(postings):
+                if p is not None and p.document_id == doc_id:
+                    counter[doc_id] += 1
+
+            if counter[doc_id] >= n:
+                ranker.reset(doc_id)
+
+                for term, posting in zip(terms, postings):
+                    if posting and posting.document_id == doc_id:
+                        ranker.update(term, terms.count(term), posting)
+
+                sieve.sift(ranker.evaluate(), doc_id)
+
+            for i, p in enumerate(postings):
+                if p is not None and p.document_id == doc_id:
+                    postings[i] = next(inverted_index[i], None)
+
+        for score, doc_id in sieve.winners():
+            yield {'document': self.__corpus.get_document(doc_id), 'score': score}
+
+
+
