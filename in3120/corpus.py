@@ -4,12 +4,15 @@
 # pylint: disable=too-many-branches
 
 from __future__ import annotations
+
 import collections.abc
 import csv
 from abc import abstractmethod
 from json import loads
-from typing import Any, List, Dict, Callable, Optional, Set, Iterable, Union, Iterator
+from typing import (Any, Callable, Dict, Iterable, Iterator, List, Optional,
+                    Set, Union)
 from xml.dom.minidom import parse
+
 from .document import Document, InMemoryDocument
 from .documentpipeline import DocumentPipeline
 
@@ -29,7 +32,7 @@ class Corpus(collections.abc.Iterable):
 
     @abstractmethod
     def __iter__(self) -> Iterator[Document]:
-        raise NotImplementedError
+        raise NotImplementedError()
 
     @abstractmethod
     def size(self) -> int:
