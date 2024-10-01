@@ -3,10 +3,9 @@
 # pylint: disable=missing-function-docstring
 # pylint: disable=line-too-long
 
+from typing import List
 import sys
 import unittest
-from typing import List
-
 import tests
 
 
@@ -20,9 +19,6 @@ def build_test_suite(test_cases: List[str]) -> unittest.TestSuite:
 def assignment_a_suite() -> unittest.TestSuite:
     return build_test_suite(["TestInMemoryInvertedIndexWithoutCompression",
                              "TestPostingsMerger", "TestBooleanSearchEngine"])
-
-def assignment_a_mazunki() -> unittest.TestSuite:
-    return build_test_suite(["TestMazunkiSimpleSearchEngine"])
 
 def assignment_b_1_suite() -> unittest.TestSuite:
     return build_test_suite(["TestSuffixArray", "TestTrie", "TestStringFinder"])
@@ -66,7 +62,6 @@ def assignment_x_suite() -> unittest.TestSuite:
 def main():
     mappings = {
         "a":   assignment_a_suite,
-        "maz": assignment_a_mazunki,
         "b-1": assignment_b_1_suite,
         "b-2": assignment_b_2_suite,
         "c-1": assignment_c_1_suite,

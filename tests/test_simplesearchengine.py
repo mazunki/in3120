@@ -4,38 +4,10 @@
 # pylint: disable=line-too-long
 # pylint: disable=too-many-locals
 
-import types
 import unittest
-from itertools import combinations_with_replacement, product, takewhile
-
+import types
+from itertools import product, combinations_with_replacement, takewhile
 from context import in3120
-
-
-class TestMazunkiSimpleSearchEngine(unittest.TestCase):
-    def setUp(self):
-        self.__normalizer = in3120.SimpleNormalizer()
-        self.__tokenizer = in3120.SimpleTokenizer()
-
-    def __process_two_term_query_verify_matches(self, query, engine, options, expected):
-        ranker = in3120.SimpleRanker()
-        matches = engine.evaluate(query, options, ranker)
-        matches = [(m["score"], m["document"].document_id) for m in matches]
-        print(f"\nMatches for query '{query}' [{options}]:\n\t{matches}\n")
-
-    def test_mesh_corpus(self):
-        corpus = in3120.InMemoryCorpus("../data/mesh.txt")
-        index = in3120.InMemoryInvertedIndex(corpus, ["body"], self.__normalizer, self.__tokenizer)
-        engine = in3120.SimpleSearchEngine(corpus, index)
-        query = "water-electrolyte balance"
-        self.__process_two_term_query_verify_matches(query, engine,
-                                                     {"match_threshold": 0.0, "hit_count": 10},
-                                                     (10, [25274, 25275, 25276]))
-        self.__process_two_term_query_verify_matches(query, engine,
-                                                     {"match_threshold": 0.7, "hit_count": 10},
-                                                     (10, [25274, 25275, 25276]))
-        self.__process_two_term_query_verify_matches(query, engine,
-                                                     {"match_threshold": 1.0, "hit_count": 10},
-                                                     (3, [25274, 25275, 25276]))
 
 
 class TestSimpleSearchEngine(unittest.TestCase):
@@ -90,7 +62,7 @@ class TestSimpleSearchEngine(unittest.TestCase):
         index = in3120.InMemoryInvertedIndex(corpus, ["a"], self.__normalizer, self.__tokenizer)
         engine = in3120.SimpleSearchEngine(corpus, index)
         self._process_query_verify_matches("ﾘﾝｸ", engine,  # Should match "リンク".
-                                           {"match_threshold": 1.0, "hit_count": 10, "debug": True},
+                                           {"match_threshold": 1.0, "hit_count": 10},
                                            (1, 1.0, [0]))
         self._process_query_verify_matches("\u00C7", engine,  # Should match "\u0043\u0327".
                                            {"match_threshold": 1.0, "hit_count": 10},
