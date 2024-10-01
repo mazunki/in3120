@@ -4,11 +4,12 @@
 # pylint: disable=too-many-locals
 
 from collections import Counter
-from typing import Iterator, Dict, Any
-from .sieve import Sieve
-from .ranker import Ranker
+from typing import Any, Dict, Iterator
+
 from .corpus import Corpus
 from .invertedindex import InvertedIndex
+from .ranker import Ranker
+from .sieve import Sieve
 
 
 class SimpleSearchEngine:
