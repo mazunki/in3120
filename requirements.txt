@@ -4,7 +4,8 @@
 # use rather than to demonstrate how they are implemented.
 #
 # Do 'pip install -r requirements.txt' to have these packages installed.
-numpy
+numpy<2
 spacy
 faiss-cpu
 colorama
+bitarray
