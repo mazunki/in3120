@@ -7,7 +7,7 @@ from typing import Iterator, List
 from bitarray import bitarray
 
 from .posting import Posting
-from .variablebytecodec import EliasGammaCodec, VariableByteCodec
+from .variablebytecodec import EliasGammaCodec, VariableByteCodec, OneshotCodec
 
 
 class PostingList(ABC):
@@ -96,7 +96,7 @@ class CompressedInMemoryPostingList(PostingList):
                 self.__where += increment
                 self.__document_id += gap
 
-                (term_frequency, increment) = EliasGammaCodec.decode(self.__data, self.__where)
+                (term_frequency, increment) = VariableByteCodec.decode(self.__data, self.__where)
                 self.__where += increment
 
                 return Posting(self.__document_id, term_frequency)
@@ -119,10 +119,14 @@ class CompressedInMemoryPostingList(PostingList):
         gap = posting.document_id - self.__previous_document_id
 
         VariableByteCodec.encode(gap, self.__data)
-        EliasGammaCodec.encode(posting.term_frequency, self.__data)
+        VariableByteCodec.encode(posting.term_frequency, self.__data)
 
         self.__logical_length += 1
         self.__previous_document_id = posting.document_id
+
+    @property
+    def total_bitlength(self):
+        return len(self.__data)
 
     def finalize_postings(self) -> None:
         pass

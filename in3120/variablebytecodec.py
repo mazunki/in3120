@@ -46,7 +46,6 @@ class VariableByteCodec:
         """
         assert source is not None
         assert start >= 0
-        # assert start == 0 or source[start - 8] >= 128
 
         number = 0
         n_bytes = 0
@@ -59,10 +58,7 @@ class VariableByteCodec:
             n_bytes += 1
 
             if segment & 0b1000_0000:
-                break
-
-        return number, n_bytes*8
-
+                return number, n_bytes*8
 
 class EliasGammaCodec:
     @staticmethod
@@ -95,9 +91,32 @@ class EliasGammaCodec:
         while source[start + n] == 0:
             n += 1
 
-        binary_repr = source[start+n:start+2*n]
-        number = int(binary_repr.to01(), 2)
+        number = 0
+        for b in range(n, 2*n):
+            number = (number << 1) | source[start+b]
 
-        return (number, 2*n)
+        return number, 2*n
+
+
+class OneshotCodec:
+    """ A PFOR inspired algorithm which works best when most of your numbers are 1. Stores the number 1 as is, and prefixes other numbers in VariableByteEncoding with a 0 """
+
+    @staticmethod
+    def encode(number: int, destination: bitarray) -> int:
+        if number == 1:
+            destination.append(1)
+            return 1
+        else:
+            destination.append(0)
+            n = VariableByteCodec.encode(number, destination)
+            return n+1
+
+    @staticmethod
+    def decode(source: bitarray, start: int) -> Tuple[int, int]:
+        if source[start] == 1:
+            return 1, 1
+        else:
+            number, consumed = VariableByteCodec.decode(source, start+1)
+            return number, consumed + 1
 
 

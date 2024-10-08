@@ -20,6 +20,8 @@ class InvertedIndex(ABC):
     """
     Abstract base class for a simple inverted index.
     """
+    
+    total_size = 0
 
     def __getitem__(self, term: str) -> Iterator[Posting]:
         return self.get_postings_iterator(term)
@@ -86,6 +88,7 @@ class InMemoryInvertedIndex(InvertedIndex):
         self._corpus = corpus
         self._normalizer = normalizer
         self._tokenizer = tokenizer
+        self._is_compressed = compressed
         self._posting_lists: List[PostingList] = []
         self._dictionary = InMemoryDictionary()
         self._build_index(fields, compressed)
@@ -123,6 +126,8 @@ class InMemoryInvertedIndex(InvertedIndex):
                 posting_list_id = self._add_to_dictionary(term)
                 self._append_to_posting_list(posting_list_id, doc_id, counter[term], compressed)
 
+        self._finalize_index()
+
 
     def _add_to_dictionary(self, term: str) -> int:
         """
@@ -142,17 +147,9 @@ class InMemoryInvertedIndex(InvertedIndex):
         # in term_ids and that they arrive in order. this is guaranteed
         # by Dictionary.add_if_absent's logic
         if term_id >= len(self._posting_lists):
-            if compressed:
-                posting_list = CompressedInMemoryPostingList()
-            else:
-                posting_list = InMemoryPostingList()
+            self._posting_lists.append(CompressedInMemoryPostingList() if compressed else InMemoryPostingList())
 
-            self._posting_lists.append(posting_list)
-        else:
-            posting_list = self._posting_lists[term_id]
-
-        new_posting = Posting(document_id, term_frequency)
-        posting_list.append_posting(new_posting)
+        self._posting_lists[term_id].append_posting(Posting(document_id, term_frequency))
 
     def _finalize_index(self):
         """
@@ -160,8 +157,19 @@ class InMemoryInvertedIndex(InvertedIndex):
         implementations that need it with the chance to tie up any loose ends,
         if needed.
         """
-        # nothing to free()
-        pass
+        for posting_list in self._posting_lists:
+            posting_list.finalize_postings()
+
+        if not self._is_compressed:
+            return
+
+        size = 0
+        for posting_list in self._posting_lists:
+            if isinstance(posting_list, CompressedInMemoryPostingList):
+                size += posting_list.total_bitlength
+        InvertedIndex.total_size += size
+        print()
+        print(f"Took {size:_} bits across {len(self._posting_lists)} posting lists. This sums up to {InvertedIndex.total_size:_} bits across all inverted indeces")
 
     def get_terms(self, buffer: str) -> Iterator[str]:
         # In a serious large-scale application there could be field-specific tokenizers.
