@@ -3,9 +3,10 @@
 # pylint: disable=missing-function-docstring
 # pylint: disable=line-too-long
 
-from typing import List
 import sys
 import unittest
+from typing import List
+
 import tests
 
 
@@ -40,6 +41,10 @@ def assignment_d_1_suite() -> unittest.TestSuite:
     return build_test_suite(["TestBetterRanker", "TestShingleGenerator", "TestWordShingleGenerator", "TestSparseDocumentVector"])
 
 
+def assignment_d_2_suite() -> unittest.TestSuite:
+    return build_test_suite(["TestCompressedInMemoryPostingList", "TestInMemoryInvertedIndexWithCompression"])
+
+
 def assignment_e_1_suite() -> unittest.TestSuite:
     return build_test_suite(["TestNaiveBayesClassifier"])
 
@@ -67,6 +72,7 @@ def main():
         "c-1": assignment_c_1_suite,
         "c-2": assignment_c_2_suite,
         "d-1": assignment_d_1_suite,
+        "d-2": assignment_d_2_suite,
         "e-1": assignment_e_1_suite,
         "x":   assignment_x_suite,
     }
