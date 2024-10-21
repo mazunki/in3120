@@ -15,6 +15,8 @@ Initially, using only VBC, the total bit-length came out to 2.01M bits. Applying
 
 After running multiple tests, the combination of VBC for gaps and EGC for term frequencies proved more reliable in reducing the overall bit-length, as expected. However, the biggest improvement came when I developed my own codec. This codec optimizes for values that are frequently exactly 1, which is common in our dataset for gaps. It works similarly to VBC but adds a 0-bit prefix for values of 1 before using VBC for larger numbers. Using our custom codec, I reduced the total bit-length from 2.01M to 1.29M bits, a notable improvement, with a final total across all tests of 2.79M bits, compared to 4.30M with the original VBC implementation.
 
+After getting some successful results, I measured the time difference between compressing and not compressing. From this I observe the compression taking roughly double the time than the uncompressed version. The ratio specifically is 0.61 on my machine, which isn't all that bad.
+
 # Discussion
 
 The results show that combining VBC for gaps and EGC for term frequencies provides better compression than using either codec alone. This is consistent with the data, as gaps tend to not be super large nor super low, while term frequencies tend to fall under the magnitude of a few bits. The custom OneshotCodec offers the most significant compression improvement, reducing both gaps and term frequencies more effectively due to its specific handling of frequent 1-values.

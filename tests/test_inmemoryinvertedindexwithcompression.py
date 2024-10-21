@@ -10,6 +10,8 @@ import inspect
 from test_inmemoryinvertedindexwithoutcompression import TestInMemoryInvertedIndexWithoutCompression
 from context import in3120
 
+import time
+
 
 class TestInMemoryInvertedIndexWithCompression(unittest.TestCase):
 
@@ -47,8 +49,31 @@ class TestInMemoryInvertedIndexWithCompression(unittest.TestCase):
         for statistic in snapshot_compressed.compare_to(snapshot_uncompressed, "filename"):
             if statistic.traceback[0].filename == inspect.getfile(in3120.InMemoryInvertedIndex):
                 size_compressed = statistic.size_diff
+
+        if not size_compressed or not size_uncompressed:
+            raise RuntimeError("that's bad")
+
         compression_ratio = size_uncompressed / size_compressed
+        print(f"compression ratio: {compression_ratio}")
         self.assertGreater(compression_ratio, 13)
+
+    def test_compression_time(self):
+        corpus = in3120.InMemoryCorpus("../data/cran.xml")
+        t0 = time.perf_counter()
+        index_uncompressed = in3120.InMemoryInvertedIndex(corpus, ["body"], self._tester._normalizer, self._tester._tokenizer, False)
+        time_uncompressed = time.perf_counter() - t0
+        self.assertIsNotNone(index_uncompressed)
+
+        t0 = time.perf_counter()
+        index_compressed = in3120.InMemoryInvertedIndex(corpus, ["body"], self._tester._normalizer, self._tester._tokenizer, True)
+        time_compressed = time.perf_counter() - t0
+
+        self.assertIsNotNone(index_compressed)
+
+        time_ratio = time_uncompressed / time_compressed
+        print(f"time ratio: {time_ratio}")
+
+        self.assertLess(time_ratio, 1)
 
 
 if __name__ == '__main__':
