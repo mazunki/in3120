@@ -2,7 +2,7 @@
 # pylint: disable=line-too-long
 
 import math
-from collections import Counter
+from collections import Counter, defaultdict
 from typing import Any, Dict, Iterable, Iterator
 from .dictionary import InMemoryDictionary
 from .normalizer import Normalizer
@@ -47,23 +47,58 @@ class NaiveBayesClassifier:
 
     def __compute_priors(self, training_set) -> None:
         """
-        Estimates all prior probabilities (or, rather, log-probabilities) needed for
+        Estimates all prior probabilities (log-probabilities) needed for
         the naive Bayes classifier.
+
+            p(lang)
         """
-        raise NotImplementedError("You need to implement this as part of the obligatory assignment.")
+        n_docs = sum(map(len, training_set.values()))
+
+        for category, corpus in training_set.items():
+            weight = len(corpus)
+            self.__priors[category] = math.log(weight / n_docs)
+
 
     def __compute_vocabulary(self, training_set, fields) -> None:
         """
         Builds up the overall vocabulary as seen in the training set.
         """
-        raise NotImplementedError("You need to implement this as part of the obligatory assignment.")
+        for corpus in training_set.values():
+            for doc in corpus:
+                for field in fields:
+                    terms = self.__get_terms(doc[field])
+                    for term in terms:
+                        self.__vocabulary.add_if_absent(term)
 
     def __compute_posteriors(self, training_set, fields) -> None:
         """
-        Estimates all conditional probabilities (or, rather, log-probabilities) needed for
+        Estimates all conditional probabilities (log-probabilities) needed for
         the naive Bayes classifier.
+
+            posterior      =   likelyhood   *  prior  / evidence
+            p(lang | term) = p(term | lang) * p(lang) / p(term)
+
+            p(term | lang) = count(term in category) + 1 / (count(all terms in category) + len(vocabulary))
         """
-        raise NotImplementedError("You need to implement this as part of the obligatory assignment.")
+        term_freqs_per_meow: Dict[str, Counter[str]] = {}
+
+        for category, corpus in training_set.items():
+            corpus_tfs: Counter[str] = Counter()
+
+            for document in corpus:
+                for field in fields:
+                    corpus_tfs.update(self.__get_terms(document.get_field(field, "")))
+
+            term_freqs_per_meow[category] = corpus_tfs
+            self.__denominators[category] = sum(corpus_tfs.values()) + len(self.__vocabulary)
+
+        for category, term_freqs in term_freqs_per_meow.items():
+            self.__conditionals[category] = {}
+
+            for term, _ in self.__vocabulary:
+                weight = term_freqs.get(term, 0) + 1
+                fraq = self.__denominators[category]
+                self.__conditionals[category][term] = math.log(weight/fraq)
 
     def __get_terms(self, buffer) -> Iterator[str]:
         """
@@ -88,7 +123,7 @@ class NaiveBayesClassifier:
 
         This is an internal detail having public visibility to facilitate testing.
         """
-        raise NotImplementedError("You need to implement this as part of the obligatory assignment.")
+        return self.__conditionals[category].get(term, math.log(1 / (len(self.__vocabulary) + 1)))
 
     def classify(self, buffer: str) -> Iterator[Dict[str, Any]]:
         """
@@ -99,4 +134,17 @@ class NaiveBayesClassifier:
         The results yielded back to the client are dictionaries having the keys "score" (float) and
         "category" (str).
         """
-        raise NotImplementedError("You need to implement this as part of the obligatory assignment.")
+        terms = list(self.__get_terms(buffer))
+        scores = {}
+
+        for category in self.__priors:
+            scores[category] = self.get_prior(category)
+
+            for term in terms:
+                scores[category] += self.get_posterior(category, term)
+
+        for category, score in sorted(scores.items(), key=lambda item: item[1], reverse=True):
+            yield {'category': category, 'score': score}
+
+    def get_vocabulary(self) -> set:
+        return set(term for term, _ in set(self.__vocabulary))
