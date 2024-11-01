@@ -2,7 +2,7 @@
 # pylint: disable=line-too-long
 
 import math
-from collections import Counter, defaultdict
+from collections import Counter
 from typing import Any, Dict, Iterable, Iterator
 from .dictionary import InMemoryDictionary
 from .normalizer import Normalizer
@@ -54,9 +54,9 @@ class NaiveBayesClassifier:
         """
         n_docs = sum(map(len, training_set.values()))
 
-        for category, corpus in training_set.items():
+        for meow, corpus in training_set.items():
             weight = len(corpus)
-            self.__priors[category] = math.log(weight / n_docs)
+            self.__priors[meow] = math.log(weight / n_docs)
 
 
     def __compute_vocabulary(self, training_set, fields) -> None:
@@ -82,23 +82,23 @@ class NaiveBayesClassifier:
         """
         term_freqs_per_meow: Dict[str, Counter[str]] = {}
 
-        for category, corpus in training_set.items():
+        for meow, corpus in training_set.items():
             corpus_tfs: Counter[str] = Counter()
 
             for document in corpus:
                 for field in fields:
                     corpus_tfs.update(self.__get_terms(document.get_field(field, "")))
 
-            term_freqs_per_meow[category] = corpus_tfs
-            self.__denominators[category] = sum(corpus_tfs.values()) + len(self.__vocabulary)
+            term_freqs_per_meow[meow] = corpus_tfs
+            self.__denominators[meow] = sum(corpus_tfs.values()) + len(self.__vocabulary)
 
-        for category, term_freqs in term_freqs_per_meow.items():
-            self.__conditionals[category] = {}
+        for meow, term_freqs in term_freqs_per_meow.items():
+            self.__conditionals[meow] = {}
 
             for term, _ in self.__vocabulary:
                 weight = term_freqs.get(term, 0) + 1
-                fraq = self.__denominators[category]
-                self.__conditionals[category][term] = math.log(weight/fraq)
+                fraq = self.__denominators[meow]
+                self.__conditionals[meow][term] = math.log(weight/fraq)
 
     def __get_terms(self, buffer) -> Iterator[str]:
         """
@@ -137,14 +137,14 @@ class NaiveBayesClassifier:
         terms = list(self.__get_terms(buffer))
         scores = {}
 
-        for category in self.__priors:
-            scores[category] = self.get_prior(category)
+        for meow in self.__priors:
+            scores[meow] = self.get_prior(meow)
 
             for term in terms:
-                scores[category] += self.get_posterior(category, term)
+                scores[meow] += self.get_posterior(meow, term)
 
-        for category, score in sorted(scores.items(), key=lambda item: item[1], reverse=True):
-            yield {'category': category, 'score': score}
+        for meow, score in sorted(scores.items(), key=lambda item: item[1], reverse=True):
+            yield {'category': meow, 'score': score}
 
     def get_vocabulary(self) -> set:
         return set(term for term, _ in set(self.__vocabulary))
